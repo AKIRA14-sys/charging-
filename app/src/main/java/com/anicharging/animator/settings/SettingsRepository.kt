@@ -17,6 +17,14 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "an
 enum class PositionPreset {
     STATUS_AREA,
     CENTER,
+    TOP,
+    BOTTOM,
+    LEFT,
+    RIGHT,
+    TOP_LEFT,
+    TOP_RIGHT,
+    BOTTOM_LEFT,
+    BOTTOM_RIGHT,
     CUSTOM_DRAG
 }
 
@@ -59,18 +67,20 @@ class SettingsRepository(private val context: Context) {
     }
 
     val settingsFlow: Flow<AppSettings> = context.dataStore.data.map { prefs ->
+        val posStr = prefs[Keys.POSITION_PRESET] ?: PositionPreset.CENTER.name
+        val safePos = try { PositionPreset.valueOf(posStr) } catch (e: Exception) { PositionPreset.CENTER }
+
+        val barStr = prefs[Keys.BATTERY_BAR_DESIGN] ?: BatteryBarDesign.RED_SHARINGAN.name
+        val safeBar = try { BatteryBarDesign.valueOf(barStr) } catch (e: Exception) { BatteryBarDesign.RED_SHARINGAN }
+
         AppSettings(
             animationCategory = prefs[Keys.ANIMATION_CATEGORY] ?: "sharingan",
-            positionPreset = PositionPreset.valueOf(
-                prefs[Keys.POSITION_PRESET] ?: PositionPreset.CENTER.name
-            ),
+            positionPreset = safePos,
             customX = prefs[Keys.CUSTOM_X] ?: 0f,
             customY = prefs[Keys.CUSTOM_Y] ?: 0f,
             animationScale = prefs[Keys.ANIMATION_SCALE] ?: 1.0f,
             displayDurationSeconds = prefs[Keys.DISPLAY_DURATION] ?: 10,
-            batteryBarDesign = BatteryBarDesign.valueOf(
-                prefs[Keys.BATTERY_BAR_DESIGN] ?: BatteryBarDesign.RED_SHARINGAN.name
-            ),
+            batteryBarDesign = safeBar,
             performanceMode = prefs[Keys.PERFORMANCE_MODE] ?: false,
             showTemperature = prefs[Keys.SHOW_TEMPERATURE] ?: true,
             showChargingSpeed = prefs[Keys.SHOW_CHARGING_SPEED] ?: true,

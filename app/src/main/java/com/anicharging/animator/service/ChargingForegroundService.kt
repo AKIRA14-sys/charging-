@@ -30,34 +30,50 @@ class ChargingForegroundService : Service() {
         when (intent?.action) {
             ACTION_POWER_CONNECTED -> {
                 val notification = createNotification("Ani Charging Service Active")
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                    startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
-                } else {
-                    startForeground(NOTIFICATION_ID, notification)
+                try {
+                    if (Build.VERSION.SDK_INT >= 34) { // Build.VERSION_CODES.UPSIDE_DOWN_CAKE
+                        startForeground(NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+                    } else {
+                        startForeground(NOTIFICATION_ID, notification)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
 
                 val batteryInfo = BatteryHelper.getBatteryInfo(this)
                 updateNotification("Charger Connected (${batteryInfo.level}%) - ${batteryInfo.chargingSpeed}")
 
-                // Trigger overlay animation service
-                val overlayIntent = Intent(this, OverlayService::class.java).apply {
-                    action = OverlayService.ACTION_SHOW_OVERLAY
+                // Trigger overlay animation service safely
+                try {
+                    val overlayIntent = Intent(this, OverlayService::class.java).apply {
+                        action = OverlayService.ACTION_SHOW_OVERLAY
+                    }
+                    startService(overlayIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-                startService(overlayIntent)
             }
             ACTION_POWER_DISCONNECTED -> {
-                // Hide overlay animation service
-                val overlayIntent = Intent(this, OverlayService::class.java).apply {
-                    action = OverlayService.ACTION_HIDE_OVERLAY
+                // Hide overlay animation service safely
+                try {
+                    val overlayIntent = Intent(this, OverlayService::class.java).apply {
+                        action = OverlayService.ACTION_HIDE_OVERLAY
+                    }
+                    startService(overlayIntent)
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
-                startService(overlayIntent)
 
                 // Stop foreground service and self cleanup
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    stopForeground(STOP_FOREGROUND_REMOVE)
-                } else {
-                    @Suppress("DEPRECATION")
-                    stopForeground(true)
+                try {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                        stopForeground(STOP_FOREGROUND_REMOVE)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        stopForeground(true)
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
                 }
                 stopSelf()
             }

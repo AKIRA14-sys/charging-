@@ -107,7 +107,7 @@ class AnimationOverlayView @JvmOverloads constructor(
             canvas.restore()
         }
 
-        // 2. Draw Battery Bar
+        // 2. Draw Battery Bar & Sharingan Icon beside Battery Bar
         val barWidth = 320f * settings.animationScale
         val barHeight = 24f
         val barLeft = cx - barWidth / 2f
@@ -137,6 +137,20 @@ class AnimationOverlayView @JvmOverloads constructor(
             }
         }
         canvas.drawRoundRect(fillRect, rx, ry, batteryBarPaint)
+
+        // Draw Tiny Sharingan Eye Beside Battery Bar if available
+        if (frames.isNotEmpty()) {
+            val sharinganIcon = frames[currentFrameIndex % frames.size]
+            val iconSize = 36f
+            val iconLeft = barLeft - iconSize - 12f
+            val iconTop = barTop + (barHeight - iconSize) / 2f
+            val iconRect = RectF(iconLeft, iconTop, iconLeft + iconSize, iconTop + iconSize)
+
+            canvas.save()
+            canvas.rotate(rotationAngle, iconLeft + iconSize / 2f, iconTop + iconSize / 2f)
+            canvas.drawBitmap(sharinganIcon, null, iconRect, paint)
+            canvas.restore()
+        }
 
         // 3. Draw Overlay Text Info (Battery %, Temp, Charging Speed, Date/Time)
         var textY = barBottom + 50f
