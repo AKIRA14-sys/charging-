@@ -32,6 +32,11 @@ class MainActivity : AppCompatActivity() {
     private val barDesigns = BatteryBarDesign.entries.map { it.name }
     private val durations = listOf("10 Seconds", "20 Seconds", "30 Seconds", "Until Unplugged")
 
+    private var activeCategory: String? = null
+    private var activePosition: String? = null
+    private var activeBarDesign: String? = null
+    private var activeDurationSec: Int? = null
+
     private val handler = Handler(Looper.getMainLooper())
     private val previewAnimRunnable = object : Runnable {
         override fun run() {
@@ -65,21 +70,39 @@ class MainActivity : AppCompatActivity() {
     private fun setupListeners() {
         binding.spinnerCategory.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, pos: Int, id: Long) {
-                lifecycleScope.launch { settingsRepository.updateAnimationCategory(categories[pos]) }
+                if (pos in categories.indices) {
+                    val selected = categories[pos]
+                    if (selected != activeCategory) {
+                        activeCategory = selected
+                        lifecycleScope.launch { settingsRepository.updateAnimationCategory(selected) }
+                    }
+                }
             }
             override fun onNothingSelected(p0: AdapterView<*>?) {}
         }
 
         binding.spinnerPosition.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, pos: Int, id: Long) {
-                lifecycleScope.launch { settingsRepository.updatePositionPreset(PositionPreset.valueOf(positions[pos])) }
+                if (pos in positions.indices) {
+                    val selected = positions[pos]
+                    if (selected != activePosition) {
+                        activePosition = selected
+                        lifecycleScope.launch { settingsRepository.updatePositionPreset(PositionPreset.valueOf(selected)) }
+                    }
+                }
             }
             override fun onNothingSelected(p0: AdapterView<*>?) {}
         }
 
         binding.spinnerBatteryBar.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(p0: AdapterView<*>?, p1: View?, pos: Int, id: Long) {
-                lifecycleScope.launch { settingsRepository.updateBatteryBarDesign(BatteryBarDesign.valueOf(barDesigns[pos])) }
+                if (pos in barDesigns.indices) {
+                    val selected = barDesigns[pos]
+                    if (selected != activeBarDesign) {
+                        activeBarDesign = selected
+                        lifecycleScope.launch { settingsRepository.updateBatteryBarDesign(BatteryBarDesign.valueOf(selected)) }
+                    }
+                }
             }
             override fun onNothingSelected(p0: AdapterView<*>?) {}
         }
@@ -92,7 +115,10 @@ class MainActivity : AppCompatActivity() {
                     2 -> 30
                     else -> 0
                 }
-                lifecycleScope.launch { settingsRepository.updateDisplayDuration(sec) }
+                if (sec != activeDurationSec) {
+                    activeDurationSec = sec
+                    lifecycleScope.launch { settingsRepository.updateDisplayDuration(sec) }
+                }
             }
             override fun onNothingSelected(p0: AdapterView<*>?) {}
         }
@@ -114,10 +140,14 @@ class MainActivity : AppCompatActivity() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && !Settings.canDrawOverlays(this)) {
                 Toast.makeText(this, "Please grant Overlay Permission first", Toast.LENGTH_SHORT).show()
             } else {
-                val overlayIntent = Intent(this, OverlayService::class.java).apply {
-                    action = OverlayService.ACTION_SHOW_OVERLAY
+                try {
+                    val overlayIntent = Intent(this, OverlayService::class.java).apply {
+                        action = OverlayService.ACTION_SHOW_OVERLAY
+                    }
+                    startService(overlayIntent)
+                } catch (e: Exception) {
+                    Toast.makeText(this, "Unable to start overlay service", Toast.LENGTH_SHORT).show()
                 }
-                startService(overlayIntent)
             }
         }
     }
@@ -127,22 +157,29 @@ class MainActivity : AppCompatActivity() {
             settingsRepository.settingsFlow.collectLatest { settings ->
                 binding.previewOverlayView.updateSettings(settings)
 
-                val catIndex = categories.indexOf(settings.animationCategory).coerceAtLeast(0)
-                if (binding.spinnerCategory.selectedItemPosition != catIndex) {
-                    binding.spinnerCategory.setSelection(catIndex)
+                activeCategory = settings.animationCategory
+                val catIndex = categories.indexOf(settings.animationCategory)
+                if (catIndex >= 0 && binding.spinnerCategory.selectedItemPosition != catIndex) {
+                    binding.spinnerCategory.setSelection(catIndex, false)
                 }
 
-                val posIndex = positions.indexOf(settings.positionPreset.name).coerceAtLeast(0)
-                if (binding.spinnerPosition.selectedItemPosition != posIndex) {
-                    binding.spinnerPosition.setSelection(posIndex)
+                activePosition = settings.positionPreset.name
+                val posIndex = positions.indexOf(settings.positionPreset.name)
+                if (posIndex >= 0 && binding.spinnerPosition.selectedItemPosition != posIndex) {
+                    binding.spinnerPosition.setSelection(posIndex, false)
                 }
 
-                val barIndex = barDesigns.indexOf(settings.batteryBarDesign.name).coerceAtLeast(0)
-                if (binding.spinnerBatteryBar.selectedItemPosition != barIndex) {
-                    binding.spinnerBatteryBar.setSelection(barIndex)
+                activeBarDesign = settings.batteryBarDesign.name
+                val barIndex = barDesigns.indexOf(settings.batteryBarDesign.name)
+                if (barIndex >= 0 && binding.spinnerBatteryBar.selectedItemPosition != barIndex) {
+                    binding.spinnerBatteryBar.setSelection(barIndex, false)
                 }
 
-                binding.switchPerformance.isChecked = settings.performanceMode
+                activeDurationSec = settings.displayDurationSeconds
+
+                if (binding.switchPerformance.isChecked != settings.performanceMode) {
+                    binding.switchPerformance.isChecked = settings.performanceMode
+                }
             }
         }
     }

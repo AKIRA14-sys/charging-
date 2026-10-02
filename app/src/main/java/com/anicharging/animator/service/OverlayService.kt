@@ -155,6 +155,8 @@ class OverlayService : Service() {
 
     private fun updateOverlayPosition(settings: AppSettings) {
         val p = params ?: return
+        p.x = 0
+        p.y = 0
         when (settings.positionPreset) {
             PositionPreset.STATUS_AREA -> {
                 p.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
@@ -162,8 +164,30 @@ class OverlayService : Service() {
             }
             PositionPreset.CENTER -> {
                 p.gravity = Gravity.CENTER
-                p.x = 0
-                p.y = 0
+            }
+            PositionPreset.TOP -> {
+                p.gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            }
+            PositionPreset.BOTTOM -> {
+                p.gravity = Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL
+            }
+            PositionPreset.LEFT -> {
+                p.gravity = Gravity.START or Gravity.CENTER_VERTICAL
+            }
+            PositionPreset.RIGHT -> {
+                p.gravity = Gravity.END or Gravity.CENTER_VERTICAL
+            }
+            PositionPreset.TOP_LEFT -> {
+                p.gravity = Gravity.TOP or Gravity.START
+            }
+            PositionPreset.TOP_RIGHT -> {
+                p.gravity = Gravity.TOP or Gravity.END
+            }
+            PositionPreset.BOTTOM_LEFT -> {
+                p.gravity = Gravity.BOTTOM or Gravity.START
+            }
+            PositionPreset.BOTTOM_RIGHT -> {
+                p.gravity = Gravity.BOTTOM or Gravity.END
             }
             PositionPreset.CUSTOM_DRAG -> {
                 p.gravity = Gravity.CENTER
